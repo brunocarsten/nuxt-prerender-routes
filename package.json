@@ -1,8 +1,8 @@
 {
-  "name": "my-module",
+  "name": "nuxt-prerender-routes",
   "version": "1.0.0",
-  "description": "My new Nuxt module",
-  "repository": "your-org/my-module",
+  "description": "Add dynamic routes to your nitro config prerender object",
+  "repository": "brunocarsten/nuxt-prerender-routes",
   "license": "MIT",
   "type": "module",
   "exports": {
