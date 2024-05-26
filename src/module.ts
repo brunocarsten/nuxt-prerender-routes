@@ -1,63 +1,79 @@
 import {
   defineNuxtModule,
-  addPlugin,
   useLogger,
-  createResolver,
   addPrerenderRoutes,
 } from '@nuxt/kit'
 import { $fetch } from 'ofetch'
+import { prepareNitroConfig } from './utils'
 
 // Module options TypeScript interface definition
 export interface ModuleOptions {
   apiUrl: string | null
   prerender?: boolean
+  routePrefix?: string | null
+}
+
+declare module 'nuxt/schema' {
+  interface NuxtOptions {
+    prerenderRoutes: ModuleOptions
+  }
 }
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'nuxt-prerender-routes',
     configKey: 'prerenderRoutes',
+    compatibility: {
+      nuxt: '^3.X.X',
+    },
   },
 
-  // Default configuration options of the Nuxt module
-  defaults: {
+  // Default configuration options of the Nuxt prerender routes module
+  defaults: nuxt => ({
+    prerender: !nuxt.options.dev && (process.env.NODE_ENV === 'production'),
     apiUrl: null,
-    prerender: true,
-  },
+    routePrefix: null,
+  }),
 
   async setup(_options, _nuxt) {
-    const resolver = createResolver(import.meta.url)
     const logger = useLogger('nuxt-prerender-routes')
 
-    if (!_options.apiUrl) {
-      logger.error('No api url defined on nuxt.config...')
+    if (!_options.prerender) {
+      logger.warn('Prerender is disabled or Nuxt is in dev mode')
       return
     }
 
-    if (!_options.prerender) {
-      logger.info('Prerender is disabled')
+    if (!_options.apiUrl) {
+      logger.warn('No api url defined on nuxt.config')
       return
     }
+    logger.info(`current apiUrl is:${_options.apiUrl}`)
 
     if (_options.apiUrl && _options.prerender) {
-      logger.start('Retrivieng routes from API...')
-      const data = await $fetch(`${_options.apiUrl}/api/website/all`)
+      try {
+        logger.start(`Retrivieng routes from ${_options.apiUrl}`)
+        const data = await $fetch(`${_options.apiUrl}`)
+        if (data) {
+          logger.info('Routes fetched...')
+          const routes = data.map((route: string) => {
+            if (_options.routePrefix) {
+              logger.info(`/${_options.routePrefix}/${route}`)
+              return `/${_options.routePrefix}/${route}`
+            }
 
-      if (data) {
-        logger.success('Routes fetched...')
+            logger.info(`${route}`)
+            return `${route}`
+          })
 
-        const routes = data.map((route: string) => {
-          logger.info(`/website/${route}`)
-          return `/website/${route}`
-        })
+          prepareNitroConfig(_nuxt, routes)
 
-        _nuxt.options.nitro.prerender!.crawlLinks = true
-        _nuxt.options.nitro.prerender!.routes?.push(routes)
-
-        addPrerenderRoutes(routes)
+          addPrerenderRoutes(routes)
+          logger.success('Dynamic routes added to nitro config.')
+        }
+      }
+      catch (error) {
+        logger.error(`Unabled to fetch from ${_options.apiUrl}`)
       }
     }
-    // Do not add the extension since the `.ts` will be transpiled to `.mjs` after `npm run prepack`
-    addPlugin(resolver.resolve('./runtime/plugin'))
   },
 })
