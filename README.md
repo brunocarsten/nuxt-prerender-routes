@@ -45,11 +45,13 @@ Add nuxt-prerender-routes to your nuxt.config modules setup
 ```
 
 Add prerenderRoutes object with prerender option enabled and your's api url to fetch your routes.
+You can also define a route prefix (optional) with 'routePrefix' option
 
 ```bash
   prerenderRoutes: {
     prerender: true,
-    apiUrl: https://your-api/url,
+    apiUrl: https://yours-api/url,
+    routePrefix: ''
   }
 ```
 
