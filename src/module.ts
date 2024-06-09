@@ -24,7 +24,7 @@ export default defineNuxtModule<ModuleOptions>({
     name: 'nuxt-prerender-routes',
     configKey: 'prerenderRoutes',
     compatibility: {
-      nuxt: '^3.X.X',
+      nuxt: '^3.10.X',
     },
   },
 
@@ -47,6 +47,7 @@ export default defineNuxtModule<ModuleOptions>({
       logger.warn('No api url defined on nuxt.config')
       return
     }
+
     logger.info(`current apiUrl is:${_options.apiUrl}`)
 
     if (_options.apiUrl && _options.prerender) {
@@ -54,15 +55,16 @@ export default defineNuxtModule<ModuleOptions>({
         logger.start(`Retrivieng routes from ${_options.apiUrl}`)
         const data = await $fetch(`${_options.apiUrl}`)
         if (data) {
-          logger.info('Routes fetched...')
+          logger.success('Routes fetched...')
+
           const routes = data.map((route: string) => {
             if (_options.routePrefix) {
               logger.info(`/${_options.routePrefix}/${route}`)
               return `/${_options.routePrefix}/${route}`
             }
 
-            logger.info(`${route}`)
-            return `${route}`
+            logger.info(`/${route}`)
+            return `/${route}`
           })
 
           prepareNitroConfig(_nuxt, routes)
